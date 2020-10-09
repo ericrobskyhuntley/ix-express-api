@@ -17,7 +17,10 @@ app.set('port', (process.env.PORT || port));
 
 app.get('/booths/', db.getIXBooths)
 app.get('/booths/:boothNum', db.getIXBoothsByInvestor)
+app.get('/exhibitorHQ/', db.getExhibitorHQ)
+app.get('/HQCountry/', db.getHQCountry)
 app.get('/countries/', db.getCountries)
+app.get('/exhibitors/', db.getExhibitors)
 
 
 //listen for request on port 3000, and as a callback function have the port listened on logged
