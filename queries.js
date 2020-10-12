@@ -18,18 +18,24 @@ const pool = new Pool({
     }
 })
 
-const getIXBooths = (request, response) => {
-    const query = `SELECT json_build_object(
+const geoJsonIze = (query) => {
+    const open = `SELECT json_build_object(
         'type', 'FeatureCollection',
         'features', json_agg(ST_AsGeoJSON(result.*)::json)
     ) AS geojson
-    FROM (
+    FROM (`
+    const close = ") AS result;"
+    return open + query + close;
+}
+
+const getIXBooths = (request, response) => {
+    const q = `
         SELECT 
-            max(b.booth_no) AS booth_no,
+            b.booth_no AS booth_no,
             max(b.type) AS type,
             e.name AS exhibitor,
             st_union(b.geom) AS geom,
-            array_agg(c.country) AS countries
+            array_agg(ic.country) AS countries
         FROM 
             booths AS b 
             LEFT JOIN exhibitor_by_booth AS eb
@@ -38,15 +44,13 @@ const getIXBooths = (request, response) => {
                 ON eb.name = e.name
             LEFT JOIN ix_by_country ic 
                 ON e.name = ic.name
-            LEFT JOIN countries c 
-                ON  ic.country = c.country
         WHERE 
             (b.type = 'ix') 
             OR (b.type = 'pt') 
             OR (b.type = 'cs')
         GROUP BY
-            e.name
-    ) AS result;`
+            b.booth_no, e.name`;
+    const query = geoJsonIze(q);
     pool.query(query, [], (error, results) => {
         if (error) {
             throw error
@@ -57,12 +61,7 @@ const getIXBooths = (request, response) => {
 
 const getIXBoothsByInvestor = (request, response) => {
     const boothNum = parseFloat(request.params.boothNum)
-    const query = `
-    SELECT json_build_object(
-        'type', 'FeatureCollection',
-        'features', json_agg(ST_AsGeoJSON(result.*)::json)
-    ) AS geojson
-    FROM (
+    const q = `
         SELECT
             eb.id AS id,
             e.name AS investor, 
@@ -86,9 +85,8 @@ const getIXBoothsByInvestor = (request, response) => {
             ((b.type = 'ix') 
             OR (b.type = 'pt') 
             OR (b.type = 'cs'))
-            AND (b.booth_no = $1)
-    ) AS result;
-    `
+            AND (b.booth_no = $1)`
+    const query = geoJsonIze(q);
     pool.query(query, [boothNum], (error, results) => {
         if (error) {
             throw error
@@ -99,12 +97,7 @@ const getIXBoothsByInvestor = (request, response) => {
 
 const getExhibitorHQ = (request, response) => {
     // const boothNum = parseFloat(request.params.boothNum)
-    const query = `
-    SELECT json_build_object(
-        'type', 'FeatureCollection',
-        'features', json_agg(ST_AsGeoJSON(result.*)::json)
-    ) AS geojson
-    FROM (
+    const q = `
         SELECT
             eb.id AS id,
             e.name AS exhibitor, 
@@ -127,9 +120,8 @@ const getExhibitorHQ = (request, response) => {
         WHERE 
             ((b.type = 'ix') 
             OR (b.type = 'pt') 
-            OR (b.type = 'cs'))
-    ) AS result;
-    `
+            OR (b.type = 'cs'))`;
+    const query = geoJsonIze(q);
     pool.query(query, [], (error, results) => {
         if (error) {
             throw error
@@ -140,12 +132,7 @@ const getExhibitorHQ = (request, response) => {
 
 const getHQCountry = (request, response) => {
     // const boothNum = parseFloat(request.params.boothNum)
-    const query = `
-    SELECT json_build_object(
-        'type', 'FeatureCollection',
-        'features', json_agg(ST_AsGeoJSON(result.*)::json)
-    ) AS geojson
-    FROM (
+    const q = `
         SELECT
             e.name AS investor,
             max(eb.booth_no) AS booth_no,
@@ -166,9 +153,8 @@ const getHQCountry = (request, response) => {
             OR (b.type = 'pt') 
             OR (b.type = 'cs')
         GROUP BY 
-            e.name
-    ) AS result;
-    `
+            e.name`;
+    const query = geoJsonIze(q);
     pool.query(query, [], (error, results) => {
         if (error) {
             throw error
@@ -178,18 +164,12 @@ const getHQCountry = (request, response) => {
 }
 
 const getCountries = (request, response) => {
-    const query = `
-    SELECT json_build_object(
-        'type', 'FeatureCollection',
-        'features', json_agg(ST_AsGeoJSON(result.*)::json)
-    ) AS geojson
-    FROM (
+    const q = `
         SELECT
             *
         FROM 
-            countries AS c
-    ) AS result;
-    `
+            countries AS c`;
+    const query = geoJsonIze(q);
     pool.query(query, [], (error, results) => {
         if (error) {
             throw error
@@ -199,18 +179,12 @@ const getCountries = (request, response) => {
 }
 
 const getExhibitors = (request, response) => {
-    const query = `
-    SELECT json_build_object(
-        'type', 'FeatureCollection',
-        'features', json_agg(ST_AsGeoJSON(result.*)::json)
-    ) AS geojson
-    FROM (
+    const q = `
         SELECT
             *
         FROM 
-            exhibitors as e
-    ) AS result;
-    `
+            exhibitors as e`;
+    const query = geoJsonIze(q);
     pool.query(query, [], (error, results) => {
         if (error) {
             throw error
