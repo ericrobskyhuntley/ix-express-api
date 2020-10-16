@@ -28,12 +28,24 @@ const geoJsonIze = (query) => {
     return open + query + close;
 }
 
+// exhibitors e
+//             JOIN ix_by_country ic 
+//                 ON e.name = ic.name
+//             JOIN countries c 
+//                 ON  ic.country = c.country
+//             JOIN exhibitor_by_booth eb 
+//                 ON e.name = eb.name
+//             JOIN booths b 
+//                 ON eb.booth_no = b.booth_no
+
 const getIXBooths = (request, response) => {
     const q = `
         SELECT 
             b.booth_no AS booth_no,
             max(b.type) AS type,
             e.name AS exhibitor,
+            e.website AS website,
+            e.add AS add,
             st_union(b.geom) AS geom,
             array_agg(ic.country) AS countries
         FROM 
@@ -49,7 +61,7 @@ const getIXBooths = (request, response) => {
             OR (b.type = 'pt') 
             OR (b.type = 'cs')
         GROUP BY
-            b.booth_no, e.name`;
+            b.booth_no, e.name, e.website, e.add`;
     const query = geoJsonIze(q);
     pool.query(query, [], (error, results) => {
         if (error) {
